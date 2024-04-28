@@ -37,6 +37,49 @@ for(i in 1:length(months)){
 }
 head(season)
 
+
+# calculate ranking mathmatical model
+# Calculate the point differential for each game
+season$point_diff <- with(season, PTSV - PTSH)
+
+# Aggregate point differentials by team
+team_stats <- aggregate(point_diff ~ `Visitor/Neutral`, data=season, FUN=mean)
+colnames(team_stats) <- c("Team", "AvgPointDiffVisitor")
+
+home_stats <- aggregate(point_diff ~ `Home/Neutral`, data=season, FUN=mean)
+colnames(home_stats) <- c("Team", "AvgPointDiffHome")
+
+# Combine the stats
+team_stats$AvgPointDiffVisitor <- -team_stats$AvgPointDiffVisitor  # Adjust visitor point diff to be positive for the model
+all_stats <- merge(team_stats, home_stats, by="Team", all=TRUE)
+all_stats$AvgPointDiff <- (na.omit(all_stats$AvgPointDiffVisitor) + na.omit(all_stats$AvgPointDiffHome)) / 2
+
+# Create a logistic regression model for win probability based on point differential
+model <- glm(I(PTSH > PTSV) ~ point_diff, family=binomial(), data=season)
+summary(model)
+
+# Use the model coefficient to adjust the rankings
+all_stats$Rating <- all_stats$AvgPointDiff * coef(model)["point_diff"]
+
+
+# Create a linear regression model for point differential based on rankings
+rankings <- all_stats[, c("Team", "Rating")]
+
+ptdif_call <- function(home, away, HNA) {
+    r1 <- rankings$Rating[rankings$Team == home]
+    r2 <- rankings$Rating[rankings$Team == away]
+    
+    # Home advantage adjustment
+    home_advantage <- ifelse(HNA == "H", 3, ifelse(HNA == "A", -3, 0))  # Example home advantage
+    
+    pt_dif <- r1 - r2 + home_advantage
+    
+    prob <- 1 / (1 + exp(-pt_dif))
+    
+    return(c(pt_dif, prob))
+}
+
+
 inter <- data.frame(season$`Visitor/Neutral`, season$PTSV, season$`Home/Neutral`, season$PTSH)
 inter$season..Visitor.Neutral. <- as.character(inter$season..Visitor.Neutral.)
 inter$season..Home.Neutral. <- as.character(inter$season..Home.Neutral.)
