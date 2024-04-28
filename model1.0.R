@@ -11,14 +11,11 @@ for(i in 1:length(months)){
   data <- readHTMLTable(newu)
   
   if(i==1){
-    
     season <- data$schedule
     season$`Visitor/Neutral` <- as.character(season$`Visitor/Neutral`)
     season$`Home/Neutral` <- as.character(season$`Home/Neutral`)
     season$PTSV <- as.numeric(as.character(season[[4]]))
     season$PTSH <- as.numeric(as.character(season[[6]]))
-    
-    
   }
   
   else{
@@ -64,6 +61,11 @@ all_stats$Rating <- all_stats$AvgPointDiff * coef(model)["point_diff"]
 
 # Create a linear regression model for point differential based on rankings
 rankings <- all_stats[, c("Team", "Rating")]
+
+lm.NBAhoops <- lm(point_diff ~ Rating, data=all_stats)
+
+# Create a logistic regression model for win probability based on point differential
+glm.pointspread <- glm(I(PTSH > PTSV) ~ point_diff, family=binomial(), data=season)
 
 ptdif_call <- function(home, away, HNA) {
     r1 <- rankings$Rating[rankings$Team == home]
