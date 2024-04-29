@@ -73,7 +73,7 @@ if (!"point_diff" %in% names(season)) {
   stop("point_diff is not in the season dataframe")
 }
 
-lm.NBAhoops <- lm(point_diff ~ Rating, data=season_all_stats)
+lm.NBAhoops <- lm(point_diff ~ Rating, data=season_all_stats) #throws error
 
 # Create a logistic regression model for win probability based on point differential
 glm.pointspread <- glm(I(PTSH > PTSV) ~ point_diff, family=binomial(), data=season)
