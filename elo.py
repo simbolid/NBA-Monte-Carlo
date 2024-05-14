@@ -1,5 +1,4 @@
 from collections import defaultdict
-from math import log
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
