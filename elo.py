@@ -1,8 +1,10 @@
-from collections import defaultdict
+import argparse
+import time
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
 import seaborn as sns
+from collections import defaultdict
 from nba_api.stats.endpoints import leaguegamefinder
 from nba_api.stats.endpoints import leaguestandings
 
@@ -202,32 +204,51 @@ def get_playoff_odds(num_simulations, east_teams, west_teams, ratings):
     return playoff_odds
 
 
-# games_2022_23 = get_season_data('2022-23', 'Regular Season')
-# games_2022_23_playoffs = get_season_data('2022-23', 'Playoffs')
-games_2023_24 = get_season_data('2023-24', 'Regular Season')
+def main():
+    parser = argparse.ArgumentParser()
+    parser.add_argument(
+        'num_simulations', 
+        help='the number of simulations to run', 
+        type=int,
+        default=10000,
+    )
+    parser.add_argument(
+        '--visualize',
+        action='store_true',
+        help='whether to visualize the result using seaborn'
+    )
+    args = parser.parse_args()
 
-# final_games_df = pd.concat([games_2022_23, games_2022_23_playoffs, games_2023_24], ignore_index=True)
-elo_ratings = process_historical_data(games_2023_24)
+    games_2023_24 = get_season_data('2023-24', 'Regular Season')
+    elo_ratings = process_historical_data(games_2023_24)
 
-num_simulations = 10000
-east_teams, west_teams = get_playoff_teams()
-playoff_data = get_playoff_odds(num_simulations, east_teams, west_teams, elo_ratings)
+    east_teams, west_teams = get_playoff_teams()
 
-df = pd.DataFrame.from_dict(playoff_data, orient='index', columns=['Conference Semifinals', 'Conference Finals', 'Finals', 'Champion'])
-df.fillna(0, inplace=True) 
-df.sort_values(by=['Conference Semifinals'], ascending=False, inplace=True)
-df = df * 100  # use percentages for readability
+    start = time.time()
+    playoff_data = get_playoff_odds(args.num_simulations, east_teams, west_teams, elo_ratings)
+    end = time.time()
+    exec_time = end - start
 
-# visualize using seaborn
-plt.figure(figsize=(12, 8))
-sns.heatmap(
-    df, 
-    annot=True, 
-    fmt='.1f', 
-    linewidths=.5, 
-    cmap='Blues'
-)
-plt.title(f'Elo-Based NBA Playoff Probabilities for {num_simulations} Simulations')
-plt.ylabel('Team')
-plt.xlabel('Stage Reached')
-plt.show()
+    df = pd.DataFrame.from_dict(playoff_data, orient='index', columns=['Conference Semifinals', 'Conference Finals', 'Finals', 'Champion'])
+    df.fillna(0, inplace=True) 
+    df.sort_values(by=['Conference Semifinals'], ascending=False, inplace=True)
+    df = df * 100  # use percentages for readability
+
+    print(f'Simulation Time: {exec_time:.3f} seconds\n')
+
+    # visualize using seaborn
+    if args.visualize:
+        plt.figure(figsize=(12, 8))
+        sns.heatmap(
+            df, 
+            annot=True, 
+            fmt='.1f', 
+            linewidths=.5, 
+            cmap='Blues'
+        )
+        plt.title(f'Elo-Based NBA Playoff Probabilities for {args.num_simulations} Simulations')
+        plt.ylabel('Team')
+        plt.xlabel('Stage Reached')
+        plt.show()
+
+main()
