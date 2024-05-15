@@ -212,8 +212,7 @@ def merge_results(dicts):
     return merged
     
 
-def get_playoff_odds(num_simulations, east_teams, west_teams, ratings):
-    num_workers = mp.cpu_count()
+def get_playoff_odds(num_simulations, num_workers, east_teams, west_teams, ratings):
     chunk_size = num_simulations // num_workers
     chunks = [chunk_size] * num_workers
 
@@ -244,6 +243,13 @@ def main():
         default=10000,
     )
     parser.add_argument(
+        '--workers', 
+        help='the number of cores to run in parallel', 
+        type=int,
+        default=mp.cpu_count(),
+        required=False,
+    )
+    parser.add_argument(
         '--visualize',
         action='store_true',
         help='whether to visualize the result using seaborn'
@@ -256,7 +262,7 @@ def main():
     east_teams, west_teams = get_playoff_teams()
 
     start = time.time()
-    playoff_data = get_playoff_odds(args.num_simulations, east_teams, west_teams, elo_ratings)
+    playoff_data = get_playoff_odds(args.num_simulations, args.workers, east_teams, west_teams, elo_ratings)
     end = time.time()
     exec_time = end - start
 
@@ -265,7 +271,7 @@ def main():
     df.sort_values(by=['Conference Semifinals'], ascending=False, inplace=True)
     df = df * 100  # use percentages for readability
 
-    print(f'Simulation Time: {exec_time:.3f} seconds\n')
+    print(f'Simulation Time: {exec_time:.3f} seconds')
 
     # visualize using seaborn
     if args.visualize:

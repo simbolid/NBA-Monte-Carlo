@@ -234,7 +234,7 @@ def main():
     df.sort_values(by=['Conference Semifinals'], ascending=False, inplace=True)
     df = df * 100  # use percentages for readability
 
-    print(f'Simulation Time: {exec_time:.3f} seconds\n')
+    print(f'Simulation Time: {exec_time:.3f} seconds')
 
     # visualize using seaborn
     if args.visualize:
